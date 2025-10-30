@@ -1,7 +1,5 @@
 import { createContext, useContext, useState, useEffect } from "react";
-import { ThemeProvider, CssBaseline } from "@mui/material";
-import { lightTheme } from "../themes/lightTheme";
-import { darkTheme } from "../themes/darkTheme";
+
 const ThemeContext = createContext();
 
 export const ThemeProviderCustom = ({ children }) => {
@@ -20,10 +18,7 @@ export const ThemeProviderCustom = ({ children }) => {
 
   return (
     <ThemeContext.Provider value={{ mode, toggleTheme }}>
-      <ThemeProvider theme={mode === "light" ? lightTheme : darkTheme}>
-        <CssBaseline />
-        {children}
-      </ThemeProvider>
+      {children}
     </ThemeContext.Provider>
   );
 };

@@ -1,4 +1,4 @@
-import { Outlet, useLocation } from "react-router-dom";
+import { Outlet } from "react-router-dom";
 import { Header } from "../components/home/Navbar";
 import { Footer } from "../components/home/Footer";
 import { useSelector, useDispatch } from "react-redux";
@@ -7,32 +7,25 @@ import { useEffect, useMemo, useState } from "react";
 import { LoadingScreen } from "../components/ui/loading";
 
 const PublicLayout = () => {
-  const { loading,data,error } = useSelector((state) => state.products);
+  const { loading, data, error } = useSelector((state) => state.products);
   const dispatch = useDispatch();
-  const location = useLocation();
-  const [routeLoading, setRouteLoading] = useState(true);
+  const [initialLoad, setInitialLoad] = useState(true);
   const memoizedData = useMemo(() => data, [data]);
-  // Fetch products on mount
-  useEffect(() => {
-    dispatch(fetchProducts());
-  }, [dispatch]);
 
-  // Show loading when app first mounts
   useEffect(() => {
-    setRouteLoading(true);
-    const timer = setTimeout(() => setRouteLoading(false), 2500);
-    return () => clearTimeout(timer);
-  }, []);
+    if (!data || data.length === 0) {
+      dispatch(fetchProducts());
+    }
+  }, [dispatch, data]);
 
-  // Show loading briefly when route changes
   useEffect(() => {
-    setRouteLoading(true);
-    const timer = setTimeout(() => setRouteLoading(false), 1000);
-    return () => clearTimeout(timer);
-  }, [location.pathname]);
+    if (!loading && data) {
+      const timer = setTimeout(() => setInitialLoad(false), 800);
+      return () => clearTimeout(timer);
+    }
+  }, [loading, data]);
 
-  // Combine both loading states
-  if (loading || routeLoading) return <LoadingScreen loading={true} />;
+  if (initialLoad && loading) return <LoadingScreen loading={true} />;
   if (error) return <div className="text-center mt-24 text-error bg-error-bg">{error}</div>;
 
   return (

@@ -1,3 +1,4 @@
+import { memo, useCallback, useEffect, useMemo, useState } from "react";
 import { Heart, ShoppingCart } from "lucide-react";
 import { useDispatch, useSelector } from "react-redux";
 import {
@@ -12,9 +13,8 @@ import {
 } from "../../redux/slices/favouriteSlice";
 import { cn } from "@/lib/utils";
 import { notify } from "../../utils/notify";
-import { useEffect, useState } from "react";
 
-export const ProductCard = ({ product }) => {
+const ProductCardComponent = ({ product }) => {
   const dispatch = useDispatch();
   const { user } = useSelector((state) => state.auth);
   const { data: cartData, loading: cartLoading } = useSelector(
@@ -24,31 +24,27 @@ export const ProductCard = ({ product }) => {
     (state) => state.favourites
   );
 
-  const [isInCart, setIsInCart] = useState(false);
-  const [isFavourite, setIsFavourite] = useState(false);
   const [processingCart, setProcessingCart] = useState(false);
   const [processingFav, setProcessingFav] = useState(false);
 
-  // ✅ Load user's cart & favourites once
   useEffect(() => {
-    if (user) {
+    if (user && (!cartData?.length || !favourites?.length)) {
       dispatch(fetchCart(user.id));
       dispatch(fetchFavourites(user.id));
     }
-  }, [user, dispatch]);
+  }, [user, dispatch, cartData?.length, favourites?.length]);
 
-  // ✅ Sync UI with store
-  useEffect(() => {
-    if (cartData && product) {
-      setIsInCart(cartData.some((item) => item.product_id === product.id));
-    }
-    if (favourites && product) {
-      setIsFavourite(favourites.some((item) => item.product_id === product.id));
-    }
-  }, [cartData, favourites, product]);
+  const isInCart = useMemo(
+    () => cartData?.some((item) => item.product_id === product.id) || false,
+    [cartData, product.id]
+  );
 
-  // ✅ Handle Cart Add/Remove
-  const handleCartToggle = async () => {
+  const isFavourite = useMemo(
+    () => favourites?.some((item) => item.product_id === product.id) || false,
+    [favourites, product.id]
+  );
+
+  const handleCartToggle = useCallback(async () => {
     if (!user) return notify.error("Please login to manage your cart");
     if (processingCart) return;
 
@@ -56,10 +52,7 @@ export const ProductCard = ({ product }) => {
       setProcessingCart(true);
 
       if (isInCart) {
-        // Find the correct cart item by product_id, not id
-        const cartItem = cartData.find(
-          (item) => item.product_id === product.id
-        );
+        const cartItem = cartData.find((item) => item.product_id === product.id);
         if (cartItem) {
           await dispatch(removeFromCart(cartItem.id)).unwrap();
         }
@@ -77,7 +70,6 @@ export const ProductCard = ({ product }) => {
         notify.success("Item added to cart!");
       }
 
-      // Refresh cart after change
       await dispatch(fetchCart(user.id));
     } catch (err) {
       console.error(err);
@@ -85,10 +77,9 @@ export const ProductCard = ({ product }) => {
     } finally {
       setProcessingCart(false);
     }
-  };
+  }, [user, processingCart, isInCart, cartData, product, dispatch]);
 
-  // ✅ Handle Favourite Add/Remove
-  const handleFavouriteToggle = async () => {
+  const handleFavouriteToggle = useCallback(async () => {
     if (!user) return notify.error("Please login to manage favourites");
     if (processingFav) return;
 
@@ -107,7 +98,6 @@ export const ProductCard = ({ product }) => {
         notify.success("Added to favourites!");
       }
 
-      // Refresh favourites
       await dispatch(fetchFavourites(user.id));
     } catch (err) {
       console.error(err);
@@ -115,7 +105,7 @@ export const ProductCard = ({ product }) => {
     } finally {
       setProcessingFav(false);
     }
-  };
+  }, [user, processingFav, isFavourite, product.id, dispatch]);
 
   return (
     <div
@@ -201,3 +191,5 @@ export const ProductCard = ({ product }) => {
     </div>
   );
 };
+
+export const ProductCard = memo(ProductCardComponent);
