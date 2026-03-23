@@ -163,7 +163,7 @@
 
   @media (width <= 768px) {
     .bg-img {
-      background-image: url("../public/5.jpg");
+      background-image: url("/5.jpg") !important;
       background-size: cover;
       background-position: center;
     }
