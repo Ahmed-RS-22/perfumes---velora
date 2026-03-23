@@ -154,7 +154,7 @@
 }
 @layer components {
   .bg-img {
-    background-image: url("./5.jpg");
+    background-image: url("/5.jpg");
     background-size: cover;
     background-position: center;
     background-repeat: no-repeat;
@@ -163,7 +163,7 @@
 
   @media (width <= 768px) {
     .bg-img {
-      background-image: url("/5.jpg") !important;
+      background-image: url("/10.jpg");
       background-size: cover;
       background-position: center;
     }
