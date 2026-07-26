@@ -7,7 +7,7 @@ import { cn } from "../../lib/utils";
 const Sidebar = () => {
   return (
     <nav className="w-full min-w-75  h-screen flex flex-col   bg-primary  px-4 py-6 ">
-      <div className=" flex justify-center items-center gap-8  border-b-2 border-b-text pb-10 pt-10 ">
+      <div className=" flex justify-center items-center gap-8  border-b-2 border-b-text pb-9 pt-10 ">
         <img src={logo} alt="" className="size-16 rounded-full " />
        <Link to={"/"}>
        <Logo /> 
