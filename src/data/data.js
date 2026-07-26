@@ -32,9 +32,9 @@ export const dashboardLinks = [
 // home nav links 
 export const navLinks = [
   { name: "Home", path: "/",icon:Home },
-  { name: "Shop", path: "/shop",icon:Store }, // optional if you’ll list all products
+  { name: "Shop", path: "/Shop",icon:Store }, // optional if you’ll list all products
   // { name: "About", path: "/about" ,icon:Info },
-  { name: "Cart", path: "/cart",icon:ShoppingCart },
+  { name: "Cart", path: "/cart",icon:ShoppingCart, badge: 0 },
   { name: "Favourites", path: "/favourites" ,icon:Heart},
 ];
 // features

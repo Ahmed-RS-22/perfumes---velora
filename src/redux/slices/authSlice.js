@@ -74,13 +74,17 @@ export const fetchUser = createAsyncThunk("auth/fetchUser", async () => {
   return data.session?.user || null;
 });
 export const listenToAuthChanges = () => (dispatch) => {
-  supabase.auth.onAuthStateChange((_event, session) => {
+  const {
+    data: { subscription },
+  } = supabase.auth.onAuthStateChange((_event, session) => {
     if (session?.user) {
-      dispatch({ type: "auth/setUser", payload: session.user });
+      dispatch(setUser(session.user));
     } else {
-      dispatch({ type: "auth/clearUser" });
+      dispatch(clearUser());
     }
+    dispatch(setInitialized(true));
   });
+  return () => subscription.unsubscribe();
 };
 
 // ✅ Slice
@@ -89,6 +93,7 @@ const authSlice = createSlice({
   initialState: {
     user: null,
     loading: false,
+    initialized: false,
     error: null,
   },
   reducers: {
@@ -97,6 +102,9 @@ const authSlice = createSlice({
     },
     clearUser: (state) => {
       state.user = null;
+    },
+    setInitialized: (state, action) => {
+      state.initialized = action.payload;
     },
   },
 
@@ -138,9 +146,13 @@ const authSlice = createSlice({
       // Fetch user
       .addCase(fetchUser.fulfilled, (state, action) => {
         state.user = action.payload;
+        state.initialized = true;
       })
-
+      .addCase(fetchUser.rejected, (state) => {
+        state.initialized = true;
+      });
   },
 });
 
+export const { setUser, clearUser, setInitialized } = authSlice.actions;
 export default authSlice.reducer;

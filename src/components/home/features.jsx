@@ -1,7 +1,7 @@
 import { features } from "../../data/data";
 export const FeaturesSection = () => {
   return (
-    <section className="relative w-full py-24 flex flex-col items-center justify-center overflow-hidden text-center">
+    <section id="features" className="relative w-full py-24 flex flex-col items-center justify-center overflow-hidden text-center">
       {/* soft gradient glow background */}
       <div className="absolute inset-0 bg-border  pointer-events-none"></div>
       <div className="relative z-10 container mx-auto px-6 flex flex-col items-center justify-center">

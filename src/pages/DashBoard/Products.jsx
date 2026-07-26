@@ -4,10 +4,12 @@ import {
   updateProduct,
   deleteProduct,
 } from "@/redux/slices/productSlice";
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback, useRef } from "react";
 import { useDispatch } from "react-redux";
 import { X } from "lucide-react";
 import ImageUploader from "../../components/ui/ImageUploader";
+
+const CATEGORIES = ["Perfume", "Cologne", "Body Spray", "Gift Set", "Other"];
 
 const ProductsPage = () => {
   const { products } = useOutletContext();
@@ -15,6 +17,8 @@ const ProductsPage = () => {
   const [editing, setEditing] = useState(null);
   const [showForm, setShowForm] = useState(false);
   const [loading, setLoading] = useState(false);
+  const [deleteLoadingId, setDeleteLoadingId] = useState(null); // per-row delete state
+  const searchTimeoutRef = useRef(null);
 
   const [form, setForm] = useState({
     name: "",
@@ -22,6 +26,7 @@ const ProductsPage = () => {
     price: "",
     quantity: "",
     image_url: "",
+    description: "",
   });
 
   const dispatch = useDispatch();
@@ -31,17 +36,23 @@ const ProductsPage = () => {
     setFilteredProducts(products);
   }, [products]);
 
-  // Search
-  const handleSearch = (e) => {
-    const query = e.target.value.toLowerCase();
-    setFilteredProducts(
-      products.filter(
-        (p) =>
-          p.name.toLowerCase().includes(query) ||
-          p.category.toLowerCase().includes(query)
-      )
-    );
-  };
+  // Debounced search — fires 300ms after user stops typing
+  const handleSearch = useCallback(
+    (e) => {
+      const query = e.target.value.toLowerCase();
+      if (searchTimeoutRef.current) clearTimeout(searchTimeoutRef.current);
+      searchTimeoutRef.current = setTimeout(() => {
+        setFilteredProducts(
+          products.filter(
+            (p) =>
+              p.name.toLowerCase().includes(query) ||
+              p.category.toLowerCase().includes(query)
+          )
+        );
+      }, 300);
+    },
+    [products]
+  );
 
   // Submit
   const handleSubmit = async (e) => {
@@ -65,6 +76,7 @@ const ProductsPage = () => {
         price: "",
         quantity: "",
         image_url: "",
+        description: "",
       });
       setShowForm(false);
     } catch (err) {
@@ -74,7 +86,15 @@ const ProductsPage = () => {
     }
   };
 
-  const handleDeleteProduct = (id) => dispatch(deleteProduct(id));
+  const handleDeleteProduct = async (id) => {
+    setDeleteLoadingId(id);
+    try {
+      await dispatch(deleteProduct(id));
+    } finally {
+      setDeleteLoadingId(null);
+    }
+  };
+
   const handleEdit = (p) => {
     setShowForm(true);
     setEditing(p.id);
@@ -84,6 +104,7 @@ const ProductsPage = () => {
       price: p.price,
       quantity: p.quantity,
       image_url: p.image_url,
+      description: p.description || "",
     });
   };
 
@@ -137,8 +158,7 @@ const ProductsPage = () => {
                   <label className="block mb-1 font-medium text-sm">
                     Category
                   </label>
-                  <input
-                    type="text"
+                  <select
                     value={form.category}
                     onChange={(e) =>
                       setForm((prev) => ({ ...prev, category: e.target.value }))
@@ -146,7 +166,14 @@ const ProductsPage = () => {
                     className="w-full px-4 py-2 border border-border rounded-lg bg-bg focus:outline-none focus:ring-2 focus:ring-primary"
                     disabled={loading}
                     required
-                  />
+                  >
+                    <option value="">Select category...</option>
+                    {CATEGORIES.map((cat) => (
+                      <option key={cat} value={cat}>
+                        {cat}
+                      </option>
+                    ))}
+                  </select>
                 </div>
               </div>
 
@@ -205,6 +232,23 @@ const ProductsPage = () => {
                     />
                   )}
                 </div>
+              </div>
+
+              {/* Description */}
+              <div>
+                <label className="block mb-1 font-medium text-sm">
+                  Description
+                </label>
+                <textarea
+                  value={form.description}
+                  onChange={(e) =>
+                    setForm((prev) => ({ ...prev, description: e.target.value }))
+                  }
+                  rows={3}
+                  placeholder="Describe the fragrance notes, occasion, etc."
+                  className="w-full px-4 py-2 border border-border rounded-lg bg-bg focus:outline-none focus:ring-2 focus:ring-primary resize-none"
+                  disabled={loading}
+                />
               </div>
 
               {/* Buttons */}
@@ -295,13 +339,11 @@ const ProductsPage = () => {
                             Edit
                           </button>
                           <button
-                            className="text-error bg-error-bg hover:text-error-bg hover:bg-error cursor-pointer px-3 py-1 rounded-full"
+                            className="text-error bg-error-bg hover:text-error-bg hover:bg-error cursor-pointer px-3 py-1 rounded-full disabled:opacity-60 disabled:cursor-not-allowed"
                             onClick={() => handleDeleteProduct(product.id)}
-                            disabled={loading}
+                            disabled={deleteLoadingId === product.id}
                           >
-                            {
-                              loading ? "Deleting..." : "Delete"
-                            }
+                            {deleteLoadingId === product.id ? "Deleting..." : "Delete"}
                           </button>
                         </td>
                       </tr>

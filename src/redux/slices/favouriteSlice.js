@@ -2,33 +2,45 @@ import { createSlice, createAsyncThunk } from "@reduxjs/toolkit";
 import { supabase } from "@/lib/supabase-client";
 import { notify } from "@/utils/notify";
 
-// ✅ Fetch user's favourites
+const FAVOURITE_SELECT = `
+  id,
+  product_id,
+  products (
+    id,
+    name,
+    price,
+    image_url,
+    category,
+    quantity
+  )
+`;
+
 export const fetchFavourites = createAsyncThunk(
   "favourites/fetch",
   async (userId) => {
     const { data, error } = await supabase
       .from("favourites")
-      .select("*")
+      .select(FAVOURITE_SELECT)
       .eq("user_id", userId);
     if (error) throw error;
     return data;
   }
 );
 
-// ✅ Add to favourites
 export const addToFavourites = createAsyncThunk(
   "favourites/add",
   async ({ userId, productId }) => {
-    const { error } = await supabase
+    const { data, error } = await supabase
       .from("favourites")
-      .insert([{ user_id: userId, product_id: productId }]);
+      .insert([{ user_id: userId, product_id: productId }])
+      .select(FAVOURITE_SELECT)
+      .single();
     if (error) throw error;
-    notify.success("Added to favourites ❤️");
-    return { product_id: productId };
+    notify.success("Added to favourites");
+    return data;
   }
 );
 
-// ✅ Remove from favourites
 export const removeFromFavourites = createAsyncThunk(
   "favourites/remove",
   async ({ userId, productId }) => {
@@ -38,7 +50,7 @@ export const removeFromFavourites = createAsyncThunk(
       .eq("user_id", userId)
       .eq("product_id", productId);
     if (error) throw error;
-    notify.info("Removed from favourites 💔");
+    notify.info("Removed from favourites");
     return productId;
   }
 );
@@ -52,7 +64,6 @@ const favouriteSlice = createSlice({
   },
   extraReducers: (builder) => {
     builder
-      // Fetch
       .addCase(fetchFavourites.pending, (state) => {
         state.loading = true;
       })
@@ -60,11 +71,16 @@ const favouriteSlice = createSlice({
         state.data = action.payload;
         state.loading = false;
       })
-      // Add
-      .addCase(addToFavourites.fulfilled, (state, action) => {
-        state.data.push(action.payload);
+      .addCase(fetchFavourites.rejected, (state, action) => {
+        state.loading = false;
+        state.error = action.error.message;
       })
-      // Remove
+      .addCase(addToFavourites.fulfilled, (state, action) => {
+        const exists = state.data.some(
+          (item) => item.product_id === action.payload.product_id
+        );
+        if (!exists) state.data.push(action.payload);
+      })
       .addCase(removeFromFavourites.fulfilled, (state, action) => {
         state.data = state.data.filter(
           (item) => item.product_id !== action.payload

@@ -6,7 +6,9 @@ export const ThemeProviderCustom = ({ children }) => {
   const [mode, setMode] = useState(() => {
     const saved = localStorage.getItem("themeMode");
     if (saved) return saved;
-    return window.matchMedia("(prefers-color-scheme: dark)").matches ? "dark" : "light";
+    return window.matchMedia("(prefers-color-scheme: dark)").matches
+      ? "dark"
+      : "light";
   });
 
   useEffect(() => {
@@ -14,7 +16,8 @@ export const ThemeProviderCustom = ({ children }) => {
     localStorage.setItem("themeMode", mode);
   }, [mode]);
 
-  const toggleTheme = () => setMode((prev) => (prev === "light" ? "dark" : "light"));
+  const toggleTheme = () =>
+    setMode((prev) => (prev === "light" ? "dark" : "light"));
 
   return (
     <ThemeContext.Provider value={{ mode, toggleTheme }}>

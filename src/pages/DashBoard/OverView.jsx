@@ -10,6 +10,11 @@ const OverviewPage = () => {
   useEffect(() => {
     dispatch(fetchAllProfiles());
   }, [dispatch]);  
+  const totalRevenue = (orders?.list || []).reduce(
+    (sum, order) => sum + (Number(order.total_price) || 0),
+    0
+  );
+
   return (
     <div className="w-full px-4 min-h-screen py-6 overflow-y-auto">
       <div className="w-full bg-bg-alt p-6 rounded-2xl shadow-lg2 h-full">
@@ -43,7 +48,7 @@ const OverviewPage = () => {
             <h2 className="text-heading text-sm font-semibold mb-2">
               Total Revenue
             </h2>
-            <p className="text-3xl font-bold text-warning">$9000</p>
+            <p className="text-3xl font-bold text-warning">${totalRevenue.toFixed(2)}</p>
           </div>
         </div>
         {/* ======= INVENTORY TABLE ======= */}
@@ -63,7 +68,7 @@ const OverviewPage = () => {
                 {products?.map((product) => (
                   <tr
                     key={product.id}
-                    className={`transition-all hover:bg-bg-alt nth-[old]:bg-bg/50  nth-[even]:bg-bg-alt/50 `}
+                    className={`transition-all hover:bg-bg-alt nth-[odd]:bg-bg/50 nth-[even]:bg-bg-alt/50`}
                   >
                     <td className="py-3 px-4 font-medium text-heading">
                       {product.name}
@@ -80,7 +85,7 @@ const OverviewPage = () => {
         {/* ======= Recent orders ======= */}
           <div className="bg-card mt-5 md:px-6 px-2 py-5 max-h-100 scrollbar-hide  overflow-auto rounded-2xl shadow-inner2">
             <h2 className="dash-title mb-4">Recent Orders</h2>
-        {orders.lenght>0 ? (
+        {orders.list?.length > 0 ? (
             <div className="overflow-x-auto rounded-xl min-w-120 border border-border shadow-sm">
               <table className="min-w-full border-collapse">
                 <thead className="bg-bg-alt sticky top-0 z-10">

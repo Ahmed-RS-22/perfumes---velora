@@ -1,5 +1,10 @@
 import { Link } from "react-router-dom";
 import { Logo } from "../ui/Logo";
+
+const scrollToFeatures = () => {
+  const el = document.getElementById("features");
+  if (el) el.scrollIntoView({ behavior: "smooth", block: "start" });
+};
 export const HeroSection = () => {
   return (
     <section className="relative w-full min-h-[90vh] flex pt-5 md:pt-2 items-center justify-center overflow-hidden bg-img hero-section">
@@ -26,7 +31,10 @@ export const HeroSection = () => {
             >
               Shop Now
             </Link>
-            <button className="md:px-8 px-5 py-3 rounded-full border border-[#C6A776] text-[#EAD9B7] font-semibold hover:bg-[#C6A776]/10 transition-all duration-300">
+            <button
+              onClick={scrollToFeatures}
+              className="md:px-8 px-5 py-3 rounded-full border border-[#C6A776] text-[#EAD9B7] font-semibold hover:bg-[#C6A776]/10 transition-all duration-300"
+            >
               Explore
             </button>
           </div>

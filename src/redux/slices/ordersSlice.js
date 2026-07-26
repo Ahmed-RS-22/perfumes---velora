@@ -32,11 +32,13 @@ export const fetchUserOrders = createAsyncThunk(
   }
 );
 
-// ✅ NEW: Fetch ALL orders (for admin) - bypasses RLS or requires admin policy
 export const fetchAllOrders = createAsyncThunk(
   "orders/fetchAllOrders",
-  async () => {
-    const { data, error } = await supabase
+  async ({ page = 1, limit = 20 } = {}) => {
+    const start = (page - 1) * limit;
+    const end = start + limit - 1;
+
+    const { data, error, count } = await supabase
       .from("orders")
       .select(
         `
@@ -52,13 +54,15 @@ export const fetchAllOrders = createAsyncThunk(
             price
           )
         )
-      `
+      `,
+        { count: "exact" }
       )
-      .order("created_at", { ascending: false });
+      .order("created_at", { ascending: false })
+      .range(start, end);
 
     if (error) throw error;
 
-    return data;
+    return { data, total: count, page };
   }
 );
 
@@ -97,8 +101,6 @@ export const createOrder = createAsyncThunk(
       quantity: item.quantity,
       price_at_time: item.price,
     }));
-
-    console.log('Order Items Data:', orderItemsData);
 
     const { error: itemsError } = await supabase
       .from("order_items")
@@ -152,8 +154,10 @@ export const updateOrderStatus = createAsyncThunk(
 const ordersSlice = createSlice({
   name: "orders",
   initialState: {
-    list: [], // User's orders
-    adminList: [], // All orders (admin)
+    list: [],
+    adminList: [],
+    adminTotal: 0,
+    adminPage: 1,
     loading: false,
     adminLoading: false,
     error: null,
@@ -191,7 +195,9 @@ const ordersSlice = createSlice({
       })
       .addCase(fetchAllOrders.fulfilled, (state, action) => {
         state.adminLoading = false;
-        state.adminList = action.payload;
+        state.adminList = action.payload.data;
+        state.adminTotal = action.payload.total;
+        state.adminPage = action.payload.page;
       })
       .addCase(fetchAllOrders.rejected, (state, action) => {
         state.adminLoading = false;
@@ -210,13 +216,23 @@ const ordersSlice = createSlice({
         state.error = action.error.message;
       })
       .addCase(updateOrderStatus.fulfilled, (state, action) => {
-        // Update in user orders
         const userIndex = state.list.findIndex((o) => o.id === action.payload.id);
-        if (userIndex !== -1) state.list[userIndex] = action.payload;
-        
-        // Update in admin orders
-        const adminIndex = state.adminList.findIndex((o) => o.id === action.payload.id);
-        if (adminIndex !== -1) state.adminList[adminIndex] = action.payload;
+        if (userIndex !== -1) {
+          state.list[userIndex] = {
+            ...state.list[userIndex],
+            status: action.payload.status,
+          };
+        }
+
+        const adminIndex = state.adminList.findIndex(
+          (o) => o.id === action.payload.id
+        );
+        if (adminIndex !== -1) {
+          state.adminList[adminIndex] = {
+            ...state.adminList[adminIndex],
+            status: action.payload.status,
+          };
+        }
       });
   },
 });

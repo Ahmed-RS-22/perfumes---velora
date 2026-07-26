@@ -9,6 +9,7 @@ import {
 } from "@/redux/slices/cartSlice";
 import { cn } from "../../lib/utils";
 import { PlaceOrderModal } from "../../components/ui/PlaceOrderModal";
+import { notify } from "../../utils/notify";
 
 export const Cart = () => {
   const dispatch = useDispatch();
@@ -69,7 +70,7 @@ export const Cart = () => {
             Your cart is empty. Start exploring our collection!
           </p>
           <Link
-            to="/shop"
+            to="/Shop"
             className="inline-block mt-6 px-6 py-3 rounded-full bg-primary text-bg hover:bg-primary/90 transition-all font-medium"
           >
             Back to Shop
@@ -174,7 +175,7 @@ export const Cart = () => {
                       </button>
 
                       <Link
-                        to="/shop"
+                        to="/Shop"
                         className="w-full text-center py-3 rounded-full border border-primary text-primary hover:bg-primary hover:text-bg font-medium transition-all duration-300"
                       >
                         Continue Shopping
@@ -191,8 +192,7 @@ export const Cart = () => {
         cartItems={cartItems || []}
         total={total}
         onOrderSuccess={() => {
-          // Optional: Add any success callback logic here
-          console.log('Order placed successfully!');
+          notify.success('Order placed successfully!');
         }}
       />
     </section>

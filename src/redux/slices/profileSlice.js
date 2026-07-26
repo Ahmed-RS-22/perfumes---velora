@@ -38,11 +38,19 @@ export const saveProfile = createAsyncThunk(
 
 export const fetchAllProfiles = createAsyncThunk(
   "profile/fetchAllProfiles",
-  async (_, { rejectWithValue }) => {
+  async ({ page = 1, limit = 20 } = {}, { rejectWithValue }) => {
     try {
-      const { data, error } = await supabase.from("profiles").select("*");
+      const start = (page - 1) * limit;
+      const end = start + limit - 1;
+
+      const { data, error, count } = await supabase
+        .from("profiles")
+        .select("id, email, username, role, created_at", { count: "exact" })
+        .order("created_at", { ascending: false })
+        .range(start, end);
+
       if (error) throw error;
-      return data;
+      return { data, total: count, page };
     } catch (error) {
       return rejectWithValue(error.message);
     }
@@ -61,7 +69,14 @@ export const deleteUserByAdmin = createAsyncThunk(
 );
 const profileSlice = createSlice({
   name: "profile",
-  initialState: { data: null, allProfiles: [], loading: false, error: null },
+  initialState: {
+    data: null,
+    allProfiles: [],
+    profilesTotal: 0,
+    profilesPage: 1,
+    loading: false,
+    error: null,
+  },
   reducers: {},
   extraReducers: (builder) => {
     builder
@@ -71,7 +86,6 @@ const profileSlice = createSlice({
       .addCase(fetchProfile.fulfilled, (state, action) => {
         state.loading = false;
         state.data = action.payload;
-        console.log(state.data);
       })
       .addCase(fetchProfile.rejected, (state, action) => {
         state.loading = false;
@@ -93,7 +107,9 @@ const profileSlice = createSlice({
       })
       .addCase(fetchAllProfiles.fulfilled, (state, action) => {
         state.loading = false;
-        state.allProfiles = action.payload; // store all users
+        state.allProfiles = action.payload.data;
+        state.profilesTotal = action.payload.total;
+        state.profilesPage = action.payload.page;
       })
       .addCase(fetchAllProfiles.rejected, (state, action) => {
         state.loading = false;

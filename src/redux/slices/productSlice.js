@@ -2,29 +2,72 @@ import { createSlice, createAsyncThunk } from "@reduxjs/toolkit";
 import { supabase } from "../../lib/supabase-client";
 import { notify } from "@/utils/notify";
 
-const initialState = {
-  data: [],
-  loading: false,
-  error: null,
-};
+const PRODUCT_COLUMNS =
+  "id, name, price, image_url, category, quantity";
 
-/* 🔹 FETCH all products */
-export const fetchProducts = createAsyncThunk("products/fetchAll", async () => {
-  const { data, error } = await supabase
-    .from("products")
-    .select("*")
-    .order("name", { ascending: true });
+export function buildProductCacheKey({ page, search = "", category = "All" }) {
+  return `${page}:${search}:${category}`;
+}
 
-  if (error) throw error;
-  return data;
-});
+/* Fetch products with pagination, search, and category filter */
+export const fetchProducts = createAsyncThunk(
+  "products/fetch",
+  async (
+    { page = 1, limit = 6, search = "", category = "All" },
+    { rejectWithValue }
+  ) => {
+    try {
+      const start = (page - 1) * limit;
+      const end = start + limit - 1;
 
-/* 🟢 ADD a new product (Admin only) */
+      let query = supabase
+        .from("products")
+        .select(PRODUCT_COLUMNS, { count: "exact" })
+        .order("name", { ascending: true });
+
+      if (search) query = query.ilike("name", `%${search}%`);
+      if (category && category !== "All") query = query.eq("category", category);
+
+      const { data, error, count } = await query.range(start, end);
+
+      if (error) throw error;
+      return {
+        data,
+        page,
+        total: count,
+        search,
+        category,
+        cacheKey: buildProductCacheKey({ page, search, category }),
+      };
+    } catch (err) {
+      return rejectWithValue(err.message);
+    }
+  }
+);
+
+/* Fetch all products for admin dashboard */
+export const fetchAllProducts = createAsyncThunk(
+  "products/fetchAll",
+  async (_, { rejectWithValue }) => {
+    try {
+      const { data, error } = await supabase
+        .from("products")
+        .select(PRODUCT_COLUMNS)
+        .order("name", { ascending: true });
+
+      if (error) throw error;
+      return data;
+    } catch (err) {
+      return rejectWithValue(err.message);
+    }
+  }
+);
+
 export const addProduct = createAsyncThunk("products/add", async (product) => {
   const { data, error } = await supabase
     .from("products")
     .insert([product])
-    .select()
+    .select(PRODUCT_COLUMNS)
     .single();
 
   if (error) throw error;
@@ -32,7 +75,6 @@ export const addProduct = createAsyncThunk("products/add", async (product) => {
   return data;
 });
 
-/* 🟠 UPDATE an existing product (Admin only) */
 export const updateProduct = createAsyncThunk(
   "products/update",
   async ({ id, updates }) => {
@@ -40,7 +82,7 @@ export const updateProduct = createAsyncThunk(
       .from("products")
       .update(updates)
       .eq("id", id)
-      .select()
+      .select(PRODUCT_COLUMNS)
       .single();
 
     if (error) throw error;
@@ -48,9 +90,8 @@ export const updateProduct = createAsyncThunk(
     return data;
   }
 );
-/* 🔴 DELETE a product (Admin only) */
+
 export const deleteProduct = createAsyncThunk("products/delete", async (id) => {
-  // 1️⃣ Fetch the image URL
   const { data: product, error: fetchError } = await supabase
     .from("products")
     .select("image_url")
@@ -58,62 +99,107 @@ export const deleteProduct = createAsyncThunk("products/delete", async (id) => {
     .single();
   if (fetchError) throw fetchError;
   if (!product) throw new Error("Product not found");
+
   const imageUrl = product.image_url;
   if (imageUrl) {
-    const path = imageUrl.split("/product-images/")[1]; // get the filename
+    const path = imageUrl.split("/product-images/")[1];
     if (path) {
       const { error: storageError } = await supabase.storage
         .from("product-images")
         .remove([path]);
-      if (storageError)
-        console.error("❌ Storage delete failed:", storageError);
-      else console.log("✅ Storage delete success:");
+      if (storageError) console.error("Storage delete failed:", storageError);
     }
   }
-  // 2️⃣ Delete the product from DB
+
   const { error } = await supabase.from("products").delete().eq("id", id);
   if (error) throw error;
   notify.success("Product & image deleted!");
   return id;
 });
-/////////////////////////////////////////
+
+const initialState = {
+  pages: {},
+  total: 0,
+  allProducts: [],
+  loading: false,
+  pageLoading: false,
+  allLoading: false,
+  error: null,
+};
+
 export const productSlice = createSlice({
   name: "products",
   initialState,
-  reducers: {},
+  reducers: {
+    clearProducts: (state) => {
+      state.pages = {};
+      state.total = 0;
+    },
+  },
   extraReducers: (builder) => {
     builder
-      // Fetch
-      .addCase(fetchProducts.pending, (state) => {
-        state.loading = true;
+      .addCase(fetchProducts.pending, (state, action) => {
+        const cacheKey = buildProductCacheKey(action.meta.arg);
+        const isCached = Boolean(state.pages[cacheKey]);
+        if (isCached) {
+          state.pageLoading = true;
+        } else {
+          state.loading = true;
+        }
       })
       .addCase(fetchProducts.fulfilled, (state, action) => {
         state.loading = false;
-        state.data = action.payload;
+        state.pageLoading = false;
+        const { data, total, cacheKey } = action.payload;
+        state.pages[cacheKey] = data;
+        state.total = total;
       })
       .addCase(fetchProducts.rejected, (state, action) => {
+        // If the request was intentionally aborted (e.g. effect cleanup in StrictMode),
+        // do not clear loading or set an error — another fetch is taking over.
+        if (action.meta.aborted) return;
         state.loading = false;
-        state.error = action.error.message;
+        state.pageLoading = false;
+        state.error = action.payload;
       })
-
-      // Add
+      .addCase(fetchAllProducts.pending, (state) => {
+        state.allLoading = true;
+      })
+      .addCase(fetchAllProducts.fulfilled, (state, action) => {
+        state.allLoading = false;
+        state.allProducts = action.payload;
+      })
+      .addCase(fetchAllProducts.rejected, (state, action) => {
+        state.allLoading = false;
+        state.error = action.payload;
+      })
       .addCase(addProduct.fulfilled, (state, action) => {
-        state.data.push(action.payload);
+        state.allProducts.unshift(action.payload);
+        Object.keys(state.pages).forEach((key) => {
+          state.pages[key].unshift(action.payload);
+        });
       })
-
-      // Update
       .addCase(updateProduct.fulfilled, (state, action) => {
-        const index = state.data.findIndex((p) => p.id === action.payload.id);
-        if (index !== -1) {
-          state.data[index] = action.payload;
-        }
+        const updated = action.payload;
+        const allIndex = state.allProducts.findIndex((p) => p.id === updated.id);
+        if (allIndex !== -1) state.allProducts[allIndex] = updated;
+        Object.keys(state.pages).forEach((page) => {
+          const index = state.pages[page].findIndex((p) => p.id === updated.id);
+          if (index !== -1) state.pages[page][index] = updated;
+        });
       })
-
-      // Delete
       .addCase(deleteProduct.fulfilled, (state, action) => {
-        state.data = state.data.filter((p) => p.id !== action.payload);
+        state.allProducts = state.allProducts.filter(
+          (p) => p.id !== action.payload
+        );
+        Object.keys(state.pages).forEach((page) => {
+          state.pages[page] = state.pages[page].filter(
+            (p) => p.id !== action.payload
+          );
+        });
       });
   },
 });
 
+export const { clearProducts } = productSlice.actions;
 export default productSlice.reducer;

@@ -7,11 +7,13 @@ import { BrowserRouter } from "react-router-dom";
 import { Provider } from "react-redux";
 import { store } from "./redux/store.js";
 import { Toaster } from "react-hot-toast";
+import ErrorBoundary from "./components/ui/ErrorBoundary.jsx";
 createRoot(document.getElementById("root")).render(
   <StrictMode>
-    <Provider store={store}>
-      <BrowserRouter>
-        <ThemeProviderCustom>
+    <ErrorBoundary>
+      <Provider store={store}>
+        <BrowserRouter>
+          <ThemeProviderCustom>
           <App />
           <Toaster
             position="top-right"
@@ -50,8 +52,9 @@ createRoot(document.getElementById("root")).render(
               },
             }}
           />
-        </ThemeProviderCustom>
-      </BrowserRouter>
-    </Provider>
+          </ThemeProviderCustom>
+        </BrowserRouter>
+      </Provider>
+    </ErrorBoundary>
   </StrictMode>
 );

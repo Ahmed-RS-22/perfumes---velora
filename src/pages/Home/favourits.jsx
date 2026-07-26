@@ -1,7 +1,7 @@
-import { Heart, ShoppingCart, Trash2 } from "lucide-react";
-import { useEffect, useState } from "react";
+﻿import { Heart, ShoppingCart, Trash2 } from "lucide-react";
+import { useCallback, useEffect, useState } from "react";
 import { useDispatch, useSelector } from "react-redux";
-import { useOutletContext, Link } from "react-router-dom";
+import { Link } from "react-router-dom";
 import {
   fetchFavourites,
   removeFromFavourites,
@@ -9,16 +9,16 @@ import {
 import { addToCart, removeFromCart, fetchCart } from "../../redux/slices/cartSlice";
 
 export const Favourites = () => {
-  const { data } = useOutletContext(); // all products
   const { user } = useSelector((state) => state.auth);
+  // favData items already contain joined `products` from Supabase select
   const { data: favData, loading } = useSelector((state) => state.favourites);
   const { data: cartItems } = useSelector((state) => state.cart);
   const dispatch = useDispatch();
 
-  const [favItems, setFavItems] = useState([]);
-  const [processing, setProcessing] = useState(false);
+  // Track which product IDs are currently processing (cart toggle)
+  const [processingIds, setProcessingIds] = useState(new Set());
 
-  // Fetch favourites & cart
+  // Fetch favourites & cart on mount
   useEffect(() => {
     if (user?.id) {
       dispatch(fetchFavourites(user.id));
@@ -26,47 +26,52 @@ export const Favourites = () => {
     }
   }, [dispatch, user]);
 
-  // Map favourites to products
-  useEffect(() => {
-    if (data && favData) {
-      const items = favData
-        .map((fav) => data.find((product) => product.id === fav.product_id))
-        .filter(Boolean);
-      setFavItems(items);
-    }
-  }, [data, favData]);
+  // Derive full product objects from the joined favourites data
+  const favItems = favData
+    .map((fav) => fav.products)
+    .filter(Boolean);
 
-  // Remove favourite
-  const handleremoveFromFav = async (product) => {
-    setProcessing(true);
-    const result = await dispatch(
-      removeFromFavourites({ userId: user.id, productId: product.id })
-    );
-    if (removeFromFavourites.fulfilled.match(result)) {
-      setFavItems((prev) => prev.filter((item) => item.id !== product.id));
-    }
-    setProcessing(false);
-  };
+  // Remove from favourites
+  const handleRemoveFromFav = useCallback(
+    async (product) => {
+      if (!user) return;
+      await dispatch(removeFromFavourites({ userId: user.id, productId: product.id }));
+    },
+    [dispatch, user]
+  );
 
-  // Handle cart toggle
-  const handleCartAction = async (product) => {
-    const inCart = cartItems?.some((c) => c.product_id === product.id);
-    if (inCart) {
-      await dispatch(removeFromCart(product.id));
-    } else {
-      await dispatch(
-        addToCart({
-          userId: user.id,
-          productId: product.id,
-          quantity: 1,
-          name: product.name,
-          price: product.price,
-          image_url: product.image_url,
-        })
-      );
-    }
-    dispatch(fetchCart(user.id)); // refresh cart state
-  };
+  // Toggle cart membership
+  const handleCartAction = useCallback(
+    async (product) => {
+      if (!user) return;
+      setProcessingIds((prev) => new Set(prev).add(product.id));
+      try {
+        const inCart = cartItems?.some((c) => c.product_id === product.id);
+        if (inCart) {
+          const cartItem = cartItems.find((c) => c.product_id === product.id);
+          if (cartItem) await dispatch(removeFromCart(cartItem.id));
+        } else {
+          await dispatch(
+            addToCart({
+              userId: user.id,
+              productId: product.id,
+              quantity: 1,
+              name: product.name,
+              price: product.price,
+              image_url: product.image_url,
+            })
+          );
+        }
+      } finally {
+        setProcessingIds((prev) => {
+          const next = new Set(prev);
+          next.delete(product.id);
+          return next;
+        });
+      }
+    },
+    [dispatch, user, cartItems]
+  );
 
   return (
     <section className="container page mx-auto px-6 py-16">
@@ -80,8 +85,15 @@ export const Favourites = () => {
         </p>
       </div>
 
+      {/* Loading */}
+      {loading && favItems.length === 0 && (
+        <div className="text-center py-20 text-text-muted animate-pulse">
+          Loading your favourites...
+        </div>
+      )}
+
       {/* Empty State */}
-      {favItems.length === 0 ? (
+      {!loading && favItems.length === 0 && (
         <div className="flex flex-col items-center justify-center py-28 text-center">
           <div className="relative">
             <Heart
@@ -91,21 +103,23 @@ export const Favourites = () => {
             <div className="absolute inset-0 rounded-full blur-xl bg-primary/20" />
           </div>
           <p className="mt-8 text-text-muted text-lg">
-            You haven’t added any favourites yet.
+            You haven't added any favourites yet.
           </p>
           <Link
-            to="/shop"
+            to="/Shop"
             className="mt-5 inline-block px-6 py-3 bg-primary text-bg rounded-full font-medium hover:bg-primary/80 transition-all duration-300"
           >
             Browse Products
           </Link>
         </div>
-      ) : (
+      )}
+
+      {/* Favourites Grid */}
+      {favItems.length > 0 && (
         <div className="grid gap-10 sm:grid-cols-2 lg:grid-cols-3">
           {favItems.map((product) => {
-            const inCart = cartItems?.some(
-              (item) => item.product_id === product.id
-            );
+            const inCart = cartItems?.some((item) => item.product_id === product.id);
+            const isProcessing = processingIds.has(product.id);
 
             return (
               <div
@@ -117,14 +131,15 @@ export const Favourites = () => {
                   <img
                     src={product?.image_url || "/20.jpg"}
                     alt={product.name}
+                    loading="lazy"
                     className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-700"
                   />
                   <div className="absolute inset-0 bg-gradient-to-t from-bg/80 via-transparent to-transparent" />
 
                   {/* Remove Favourite */}
                   <button
-                    disabled={loading || processing}
-                    onClick={() => handleremoveFromFav(product)}
+                    disabled={loading}
+                    onClick={() => handleRemoveFromFav(product)}
                     className="absolute top-4 right-4 p-2 rounded-full bg-bg/70 backdrop-blur-sm text-error hover:bg-error hover:text-bg transition-all duration-300"
                     title="Remove from favourites"
                   >
@@ -159,7 +174,7 @@ export const Favourites = () => {
                   {/* Cart Action */}
                   <button
                     onClick={() => handleCartAction(product)}
-                    disabled={product.quantity === 0 || processing}
+                    disabled={product.quantity === 0 || isProcessing}
                     className={`flex items-center justify-center gap-2 w-full py-3 rounded-full text-bg font-medium transition-all duration-300 ${
                       inCart
                         ? "bg-error/90 hover:bg-error"
@@ -171,7 +186,7 @@ export const Favourites = () => {
                     }`}
                   >
                     <ShoppingCart size={18} />
-                    {processing
+                    {isProcessing
                       ? "Processing..."
                       : inCart
                       ? "Remove from Cart"

@@ -378,7 +378,7 @@ const OrdersPage = () => {
                         </td>
                         <td className="py-3 px-4 text-text">
                           {allProfiles.find((p) => p.id === order.user_id)
-                            .username || "N/A"}
+                            ?.username || "N/A"}
                         </td>
                         <td className="py-3 px-4 text-primary font-semibold">
                           ${order.total_price}

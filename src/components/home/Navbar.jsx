@@ -27,6 +27,7 @@ export const Header = () => {
 
   // ✅ Get auth state from Redux
   const { user } = useSelector((state) => state.auth);
+  const cartCount = useSelector((state) => state.cart.data?.length ?? 0);
   const mainEmail = import.meta.env.VITE_ADMIN_EMAIL;
   // ✅ Fetch current user if exists (on page refresh)
   useEffect(() => {
@@ -85,7 +86,15 @@ export const Header = () => {
                   }
                   to={link.path}
                 >
-                  {link.icon && <link.icon />} {link.name}
+                  <span className="relative">
+                    {link.icon && <link.icon />}
+                    {link.name === "Cart" && cartCount > 0 && (
+                      <span className="absolute -top-2 -right-2 bg-error text-bg text-[10px] font-bold rounded-full w-4 h-4 flex items-center justify-center">
+                        {cartCount > 9 ? "9+" : cartCount}
+                      </span>
+                    )}
+                  </span>
+                  {link.name}
                 </NavLink>
               </li>
             ))}
@@ -130,7 +139,15 @@ export const Header = () => {
                     }`
                   }
                 >
-                  {link.icon && <link.icon />} {link.name}
+                  <span className="relative">
+                    {link.icon && <link.icon />}
+                    {link.name === "Cart" && cartCount > 0 && (
+                      <span className="absolute -top-2 -right-2 bg-error text-bg text-[10px] font-bold rounded-full w-4 h-4 flex items-center justify-center">
+                        {cartCount > 9 ? "9+" : cartCount}
+                      </span>
+                    )}
+                  </span>
+                  {link.name}
                 </NavLink>
               </li>
             ))}
