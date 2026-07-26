@@ -1,0 +1,290 @@
+@import "tailwindcss";
+
+@theme {
+  /* Brand & Primary */
+  --color-primary: var(--color-primary);
+  --color-primary-light: var(--color-primary-light);
+  --color-primary-dark: var(--color-primary-dark);
+
+  /* Backgrounds & Surfaces */
+  --color-bg: var(--color-bg);
+  --color-bg-alt: var(--color-bg-alt);
+  --color-card: var(--color-card);
+  --color-border: var(--color-border);
+  --color-shad: var(--color-shad);
+
+  /* Typography */
+  --color-text: var(--color-text);
+  --color-text-muted: var(--color-text-muted);
+  --color-heading: var(--color-heading);
+
+  /* Action & State Colors */
+  --color-success: var(--color-success);
+  --color-success-bg: var(--color-success-bg);
+  --color-warning: var(--color-warning);
+  --color-warning-bg: var(--color-warning-bg);
+  --color-error: var(--color-error);
+  --color-error-bg: var(--color-error-bg);
+  --color-info: var(--color-info);
+  --color-info-bg: var(--color-info-bg);
+
+  /* Shadows */
+  --shadow-sm2: var(--shadow-sm);
+  --shadow-md2: var(--shadow-md);
+  --shadow-lg2: var(--shadow-lg);
+  --shadow-inner2: var(--shadow-inner);
+  /* animations */
+  --animate-luxuryGlow: luxuryGlow 5s ease-in-out infinite;
+  --animate-fadeIn: fadeIn 1.5s ease-in-out forwards;
+  --animate-pulse-slow: pulse-slow 6s ease-in-out infinite;
+  --animate-float: float 4s ease-in-out infinite;
+  --animate-spin-slow: spin-slow 2s linear infinite;
+}
+
+/* =========================================
+   LIGHT THEME (DEFAULT)
+========================================= */
+
+@layer theme {
+  :root {
+    /* BRAND & PRIMARY COLORS */
+    --color-primary: #c6a776;
+    --color-primary-light: #dcc9aa;
+    --color-primary-dark: #a88d5e;
+
+    /* BACKGROUNDS & SURFACES */
+    --color-bg: #fbf9f5;
+    --color-bg-alt: #f7f3ed;
+    --color-card: #ffffff;
+    --color-border: #ede5d8;
+    --color-shad: rgba(0, 0, 0, 0.05);
+
+    /* TYPOGRAPHY */
+    --color-text: #5e5e5e;
+    --color-text-muted: #9c8f7c;
+    --color-heading: #3c3c3c;
+
+    /* ACTION & STATE COLORS */
+    --color-success: #6bb27c;
+    --color-success-bg: #e9f5ee;
+
+    --color-warning: #e8b058;
+    --color-warning-bg: #fff8e8;
+
+    --color-error: #d4746a;
+    --color-error-bg: #fdecea;
+
+    --color-info: #6baacf;
+    --color-info-bg: #eaf4fb;
+
+    /* SHADOWS (LIGHT MODE) */
+    --shadow-sm: 0 1px 3px rgba(180, 160, 130, 0.12);
+    --shadow-md: 0 4px 8px rgba(180, 160, 130, 0.18);
+    --shadow-lg: 0 8px 20px rgba(140, 120, 90, 0.25);
+    --shadow-inner: inset 0 2px 4px rgba(150, 130, 100, 0.1);
+  }
+
+  /* =========================================
+     DARK THEME
+  ========================================= */
+  [data-theme="dark"] {
+    color-scheme: dark;
+    --color-primary: #d4b47d;
+    --color-primary-light: #e4cfa5;
+    --color-primary-dark: #b39361;
+
+    --color-bg: #1c1b19;
+    --color-bg-alt: #252422;
+    --color-card: #2c2b29;
+    --color-border: #3a382f;
+    --color-shad: rgba(0, 0, 0, 0.3);
+
+    --color-text: #e5e2da;
+    --color-text-muted: #b4a68b;
+    --color-heading: #f4e9d8;
+
+    --color-success: #7fd38d;
+    --color-success-bg: #223326;
+
+    --color-warning: #e4b96e;
+    --color-warning-bg: #3a2f1f;
+
+    --color-error: #e6867b;
+    --color-error-bg: #3b2322;
+
+    --color-info: #85bce1;
+    --color-info-bg: #1e2a33;
+
+    /* SHADOWS (DARK MODE) */
+    --shadow-sm: 0 1px 3px rgba(0, 0, 0, 0.3);
+    --shadow-md: 0 4px 8px rgba(0, 0, 0, 0.4);
+    --shadow-lg: 0 8px 20px rgba(0, 0, 0, 0.5);
+    --shadow-inner: inset 0 2px 4px rgba(255, 255, 255, 0.05);
+  }
+}
+@layer base {
+  *,
+  *::after,
+  *::before {
+    padding: 0;
+    margin: 0;
+    box-sizing: border-box;
+    /* scrollbar-width: thin;
+    scrollbar-color: #a88d5e #5e5e5e; */
+  }
+  body {
+    background-color: var(--color-border);
+  }
+
+}
+::-webkit-scrollbar {
+  width: 8px;
+}
+/* Track */
+::-webkit-scrollbar-track {
+  background: #5e5e5e; 
+}
+/* Handle */
+::-webkit-scrollbar-thumb {
+  background: #a88d5e; 
+}
+/* Handle on hover */
+::-webkit-scrollbar-thumb:hover {
+  background: #dcc9aa; 
+}
+@layer components {
+  .bg-img {
+    background-image: url("./5.jpg");
+    background-size: cover;
+    background-position: center;
+    background-repeat: no-repeat;
+    transition: background 0.4s ease-in-out;
+  }
+
+  @media (width <= 768px) {
+    .bg-img {
+      background-image: url("./10.jpg");
+      background-size: cover;
+      background-position: center;
+    }
+    /* index.css */
+
+  }
+    .scrollbar-hide::-webkit-scrollbar {
+      display: none;
+    }
+    .scrollbar-hide {
+      -ms-overflow-style: none; /* IE and Edge */
+      scrollbar-width: none; /* Firefox */
+    }
+  /* Add shimmer animation to the hero-section */
+  .hero-section::after {
+    content: "";
+    position: absolute;
+    inset: 0;
+    pointer-events: none;
+    background: radial-gradient(
+        circle at 30% 50%,
+        rgba(255, 255, 255, 0.08),
+        transparent 70%
+      ),
+      radial-gradient(
+        circle at 70% 60%,
+        rgba(255, 255, 255, 0.05),
+        transparent 80%
+      );
+    animation: shimmer 6s infinite alternate ease-in-out;
+    mix-blend-mode: soft-light;
+  }
+
+  .skeleton-shimmer {
+    background: linear-gradient(90deg, #2a2a2a 25%, #3a3a3a 50%, #2a2a2a 75%);
+    background-size: 200% 100%;
+    animation: shimmer2 1.5s infinite linear;
+  }
+}
+@keyframes shimmer {
+  from {
+    opacity: 0.15;
+    transform: scale(1);
+  }
+  to {
+    opacity: 0.35;
+    transform: scale(1.04);
+  }
+}
+
+@utility page {
+  @apply min-h-screen md:mt-22 mt-18;
+}
+@utility nav-icon {
+  @apply rounded-full overflow-hidden  bg-primary border p-1 text-bg hover:text-primary hover:bg-bg cursor-pointer transition-all duration-300;
+}
+@utility dash-title {
+  @apply sm:text-3xl text-2xl font-bold mb-6 text-primary-dark;
+}
+@keyframes luxuryGlow {
+  0% {
+    text-shadow: 0 0 8px rgba(245, 230, 196, 0.2),
+      0 0 12px rgba(245, 230, 196, 0.15), 0 0 20px rgba(198, 167, 118, 0.1);
+
+    filter: brightness(1);
+  }
+  50% {
+    text-shadow: 0 0 12px rgba(245, 230, 196, 0.5),
+      0 0 24px rgba(198, 167, 118, 0.4), 0 0 36px rgba(245, 230, 196, 0.3);
+    filter: brightness(1.15);
+  }
+  100% {
+    text-shadow: 0 0 8px rgba(245, 230, 196, 0.2),
+      0 0 12px rgba(245, 230, 196, 0.15), 0 0 20px rgba(198, 167, 118, 0.1);
+    filter: brightness(1);
+  }
+}
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(30px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+@keyframes float {
+  0%,
+  100% {
+    transform: translateY(0);
+  }
+  50% {
+    transform: translateY(-12px);
+  }
+}
+@keyframes pulse-slow {
+  0%,
+  100% {
+    opacity: 0.5;
+    transform: scale(1);
+  }
+  50% {
+    opacity: 0.8;
+    transform: scale(1.05);
+  }
+}
+
+@keyframes spin-slow {
+  0% {
+    transform: rotate(0deg);
+  }
+  100% {
+    transform: rotate(360deg);
+  }
+}
+@keyframes shimmer2 {
+  0% {
+    background-position: -1000px 0;
+  }
+  100% {
+    background-position: 1000px 0;
+  }
+}
